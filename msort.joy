@@ -1,0 +1,121 @@
+#
+# merge sort
+# Sort a list of integers in nondecreasing order. 
+#
+
+msort :=
+   [null?] 
+   [nop]
+   [[cdr null?] 
+    [nop]
+    [split dup car msort swap cadr msort [] cons cons merge]
+    ifte]
+   ifte;
+
+##### 
+# split :: [A] -> [[B] [C]]
+#   where B and C are of almost equal length.
+# split-init :: [A] -> [[] [] A]
+# split-main :: [[] [] A] -> [[B] [C]]
+# split-move :: [[A] [B] a C] -> [[B] [a A] C]
+#
+split := split-init split-main;
+split-init := [] swap [] swap cons cons;
+split-main := [cddr null?] [nop] [split-move split-main] ifte; 
+split-move := dup dup dup car swap caddr swap cons
+              swap cdddr cons swap cadr swap cons;
+
+
+#####
+# merge :: [[A] [B]] -> [C]
+#   where both A and B are supposed to be sorted in nondecreasing order 
+#   ane C is the sorted list consisting of all the elements in A and B. 
+# merge-A-after-C :: [[A] [B] C] -> [C' A] 
+# merge-B-after-C :: [[A] [B] C] -> [C' B] 
+#   where C' is the reverse of C. 
+# merge-move-min :: [[a A] [b B] C] -> [[A] [b B] a C] if a<b
+#                                      [[a A] [B] b C] otherwise
+# merge-move-a :: [[a A] [b B] C] -> [[A] [b B] a C]
+# merge-move-b :: [[a A] [b B] C] -> [[a A] [B] b C]
+# merge-extract-a :: [[a A] [b B] C] -> a
+# merge-extract-A :: [[a A] [b B] C] -> [A]
+# merge-extract-b:: [[a A] [b B] C] -> b
+# merge-extract-B:: [[a A] [b B] C] -> [B]
+# 
+merge := 
+   [car null?] 
+   [merge-B-after-C]
+   [[cadr null?] 
+    [merge-A-after-C]
+    [merge-move-min merge] ifte]
+   ifte; 
+merge-A-after-C := dup cddr reverse swap car append;
+merge-B-after-C := dup cddr reverse swap cadr append;
+merge-move-min :=
+   dup dup merge-extract-a swap merge-extract-b
+   [<] [pop pop merge-move-a] [pop pop merge-move-b] ifte;
+merge-move-a := 
+   dup merge-extract-A swap 
+   dup cadr swap
+   dup merge-extract-a swap
+   cddr cons cons cons;
+merge-move-b := 
+   dup car swap 
+   dup merge-extract-B swap
+   dup merge-extract-b swap
+   cddr cons cons cons;
+merge-extract-a := car car;
+merge-extract-A := car cdr;
+merge-extract-b := cadr car;
+merge-extract-B := cadr cdr;
+
+
+#####
+# Reverse a list. 
+# This reverses a list as follows:
+#      [a_1 a_2 ... a_n] reverse 
+# -->> [[] a_1 a_2 ... a_n] rev-sub
+#      where [] denotes the empty list.
+# -->> [[a_1] a_2 ... a_n] rev-sub
+# -->> [[a_2 a_1] a_3 ... a_n] rev-sub
+#         ......
+# -->> [[a_n ... a_2 a_1]] rev-sub
+# -->> [a_n ... a_2 a_1] 
+#
+reverse := [] swap cons rev-sub;
+rev-sub := [cdr null?] 
+           [car] 
+           [dup dup cadr swap car cons swap cddr cons rev-sub] 
+           ifte;
+
+
+#####
+# Test codes 
+
+# test code for split
+[[10] [20] 30 40 50] split-move;
+ [[] [] 1 2 3 4 5] split;
+[1 2 3 4 5] split;
+[1] split;
+
+# test code for merge
+[[1 2 3] [4 5 6] 100 200 ] merge-extract-a;
+[[1 2 3] [4 5 6] 100 200 ] merge-extract-A;
+[[1 2 3] [4 5 6] 100 200 ] merge-extract-b;
+[[1 2 3] [4 5 6] 100 200 ] merge-extract-B;
+[[1 2 3] [4 5 6] 100 200 ] merge-move-a;
+[[1 2 3] [4 5 6] 100 200 ] merge-move-b;
+[[1 2 3] [4 5 6] 100 200 ] merge-move-max;
+[[10 11 12] [4 5 6] 100 200 ] merge-move-max;
+[[400 500 600] [] 100 200 ] merge-A-after-C;
+[[] [400 500 600] 100 200 ] merge-B-after-C;
+[[1 3 5] [2 4 6]] merge; 
+
+# test code for revese
+[1 2 3 4] reverse;
+
+
+#####
+# test code for merge sort
+[6 5 4 3 2 1] msort;
+[1 6 5 4 2 3] msort;

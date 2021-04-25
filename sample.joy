@@ -1,0 +1,143 @@
+#
+# A Joy program in this dialect is a sequence of definitions and expressions. 
+# A definition defines a new combinator and is of the following form:
+#      <identifier> := <expression>;
+# where <identifier> is a name of the new combinator and <expression> is 
+# its program. An expression is a sequence of values and combinators. 
+# The order of definitions and expressions is irrelevant; 
+# some expression using a new combinator may precede its definition.
+#
+# In this dialect, integers, booleans, and lists are available as values. 
+# A list is denoted with using brackets such as [] and [10 20 30]. 
+# Any lists are viewed as values. Some list can be viewed as a quoted 
+# expression if it contains a combinator. # For exmple, [10 20 +] can be 
+# viewed as a quoted expression calculating 10+20. To execute it, 
+# it is needed to unquote it by special combinators, such as 
+# 'unquote' and 'ifte', which deal with quoted expressions. 
+#
+# The symbol # starts a line comment. 
+#
+
+
+#####
+# some expressions.
+#
+10 20 30 + *;    # A line comment may start at any position. 
+10 20 -30 abs min + 40 *; 
+10 30 [-20 abs min] unquote + 40 *; 
+10 30 swap [-20 abs min] unquote + 40 *; 
+10 [20 [-30 abs min] i] i + 40 *; 
+
+
+#####
+# Summation via naive recursion, an example of linear recursion.
+# Note: '[nop]' below may be replaced with [], the empty list.
+#
+sum-naive := [0 =] [nop] [dup pred sum-naive +] ifte; 
+4 sum-naive;
+
+
+#####
+# Summation via tail recursion, an example of tail recursion. 
+# This computes 1+2+...+n as follows: 
+#      n sum-tail-main
+# -->> [n 0] sum-tail
+#      where the second element of [n 0] is used as an accumulator
+#      for the summation. 
+# -->> [n-1 n] sum-tail
+# -->> [n-2 n-1+n] sum-tail
+#         ......
+# -->> [0 1+2+...+n-1+n] sum-tail
+# -->> 1+2+...+n-1+n
+# 
+sum-tail-main := [0] cons sum-tail;
+sum-tail := [car 0 =] [cadr] [add sum-tail] ifte;
+add := dup car pred swap dup car swap cadr + [] cons cons;
+4 sum-tail-main;
+
+
+#####
+# Fibonacci number via naive recursion, an exmaple of binary recursion. 
+#
+fib-naive := 
+   [2 <] 
+   [nop] 
+   [pred dup fib-naive 
+    swap pred fib-naive 
+    +] 
+   ifte; 
+0 fib-naive;
+1 fib-naive;
+2 fib-naive;
+3 fib-naive;
+4 fib-naive;
+5 fib-naive;
+6 fib-naive;
+7 fib-naive;
+8 fib-naive;
+9 fib-naive;
+10 fib-naive;
+
+
+#####
+# Fibonacci number via tail recursion. 
+# This computes the n-th Fibonacci number as follows: 
+#      n fib-tail-main 
+# -->> [[1 n] [1 0]] fib-tail 
+#      where 1 and 0 of [1 0] above is the first and zeroth Fibonacci number 
+#      respectively, and 1 of [1 n] is the index of the first Fibonacci number  
+#      which means the 'latest' Fibonacci number is the first one. 
+# -->> [[2 n] [1 1]] fib-tail 
+#      where the left 1 and right 1 of [1 1] is the second and first 
+#      Fibonacci number, and 2 of [2 n] means the index of the 'latest' one. 
+# -->> [[3 n] [2 1]] fib-tail 
+# -->> [[4 n] [3 2]] fib-tail 
+# -->> [[5 n] [5 3]] fib-tail 
+# -->> [[6 n] [8 5]] fib-tail 
+#          ......
+# -->> [[n n] [f_n f_{n-1}]] fib-tail
+#      where f_k denotes the k-th Fibonacci number. 
+# -->> f_n
+#
+fib-tail-main  
+   := [2 <]
+      [nop] 
+      [1 swap [] cons cons [[1 0]] cons fib-tail]
+      ifte;
+fib-tail  := [cond-exp] [then-exp] [else-exp fib-tail] ifte ;
+cond-exp  := car dup car swap cadr = ;
+then-exp  := cadr car ;
+else-exp  := dup next-idx swap next-term [] cons cons ;
+next-idx  := car dup car succ swap cdr cons ;
+next-term := cadr dup dup car swap cadr + swap car [] cons cons ;
+0 fib-tail-main;
+1 fib-tail-main;
+2 fib-tail-main;
+3 fib-tail-main;
+4 fib-tail-main;
+5 fib-tail-main;
+6 fib-tail-main;
+7 fib-tail-main;
+8 fib-tail-main;
+9 fib-tail-main;
+10 fib-tail-main;
+
+
+#####
+# Reversing a list. 
+# This reverses a list as follows:
+#      [a_1 a_2 ... a_n] revese 
+# -->> [[] a_1 a_2 ... a_n] rev-sub
+#      where [] denotes the empty list.
+# -->> [[a_1] a_2 ... a_n] rev-sub
+# -->> [[a_2 a_1] a_3 ... a_n] rev-sub
+#         ......
+# -->> [[a_n ... a_2 a_1]] rev-sub
+# -->> [a_n ... a_2 a_1] 
+#
+reverse := [] swap cons rev-sub;
+rev-sub := [cdr null?] 
+           [car] 
+           [dup dup cadr swap car cons swap cddr cons rev-sub] 
+           ifte;
+[1 2 3 4] reverse;
